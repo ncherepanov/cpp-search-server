@@ -109,10 +109,6 @@ public:
         }
     }
     
-    /*explicit SearchServer(const std::string& stop_words_text)
-        : SearchServer(SplitIntoWords(stop_words_text)) {
-    }*/
-    
     void AddDocument(int document_id, const string& document, DocumentStatus status, const vector<int>& ratings){
         if ((documents_.find(document_id) != documents_.end()) || (document_id < 0)) {
             throw invalid_argument("Wrong id!"s);
