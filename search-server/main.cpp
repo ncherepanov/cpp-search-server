@@ -101,13 +101,8 @@ public:
         }
     }
     
-    explicit SearchServer(const string& stop_words) {
-        for (const string& word : SplitIntoWords(stop_words)) {
-            if (!IsValidWord(word)){
-                throw invalid_argument("In stop words are especial simbols!"s);
-           }
-            stop_words_.insert(word);
-        }
+    explicit SearchServer(const string& stop_words_text)
+        : SearchServer(SplitIntoWords(stop_words_text)) {
     }
     
     void AddDocument(int document_id, const string& document, DocumentStatus status, const vector<int>& ratings){
@@ -115,11 +110,6 @@ public:
             throw invalid_argument("Wrong id!"s);
         }
         const vector<string> words = SplitIntoWordsNoStop(document);
-        for (auto& word : words) {
-            if (!IsValidWord(word)) {
-            return throw invalid_argument("Founded special simbols!");
-            }
-        }
         const double inv_word_count = 1.0 / words.size();
         for (const string& word : words) {
             word_to_document_freqs_[word][document_id] += inv_word_count;
@@ -132,11 +122,6 @@ public:
     vector<Document> FindTopDocuments(const string& raw_query, DocumentPredicate document_predicate) const {
         if (raw_query.empty()) {
             throw invalid_argument("Empty query"s);
-        }
-        for (const string& word : SplitIntoWords(raw_query)) {
-            if (!IsValidWord(word) || !IsValidMinusWord(word)) {
-                throw invalid_argument("The query includes special simbols or minuses"s);
-            }
         }
         const Query query = ParseQuery(raw_query);
         auto matched_documents = FindAllDocuments(query, document_predicate);
@@ -170,20 +155,12 @@ public:
     }
     
     int GetDocumentId(int index) const {
-        if ((index < 0) || (index >= static_cast<int>(documents_.size()))) {
-            throw out_of_range("Wrong id"s);
-        }
-        return documents_index_[index];
+        return documents_index_.at(index);
     }
 
     tuple <vector<string>, DocumentStatus> MatchDocument(const string& raw_query, int document_id) const {
         if (raw_query.empty()) {
             throw invalid_argument("Empty query"s);
-        }
-        for (const string& word : SplitIntoWords(raw_query)) {
-            if (!IsValidWord(word) || !IsValidMinusWord(word)) {
-                throw invalid_argument("The query includes special simbols or minuses"s);
-            }
         }
         const Query query = ParseQuery(raw_query);
         vector<string> matched_words;
@@ -216,21 +193,7 @@ private:
     map<string, map<int, double>> word_to_document_freqs_;
     map<int, DocumentData> documents_;
     vector<int> documents_index_;
-
-    bool IsStopWord(const string& word) const {
-        return stop_words_.count(word) > 0;
-    }
-
-    vector<string> SplitIntoWordsNoStop(const string& text) const {
-        vector<string> words;
-        for (const string& word : SplitIntoWords(text)) {
-            if (!IsStopWord(word)) {
-                words.push_back(word);
-            }
-        }
-        return words;
-    }
-
+    
     static int ComputeAverageRating(const vector<int>& ratings) {
         if (ratings.empty()) {
             return 0;
@@ -253,15 +216,28 @@ private:
         if (word.empty() || (word == "-"s)) {
             return false;
         }
-        char lit_left = 0;
-        for(char lit : word){
-            if((lit == '-') && (lit_left == '-')) { return false; }
-            else { lit_left = lit; };
-        }
-        /*if (word[0] == '-' && word[1] == '-') {
+        if (word[0] == '-' && word[1] == '-') {
             return false;
-        }*/
+        }
         return true;
+    }
+
+    bool IsStopWord(const string& word) const {
+        return stop_words_.count(word) > 0;
+    }
+
+    vector<string> SplitIntoWordsNoStop(const string& text) const {
+        vector<string> words;
+        for (const string& word : SplitIntoWords(text)) {
+            if (!IsValidWord(word)) {
+                throw invalid_argument("In the document founded special simbols!");
+            }
+            if (!IsStopWord(word)) {
+                
+                words.push_back(word);
+            }
+        }
+        return words;
     }
 
     struct QueryWord {
@@ -288,6 +264,9 @@ private:
     Query ParseQuery(const string& text) const {
         Query query;
         for (const string& word : SplitIntoWords(text)) {
+            if (!IsValidWord(word) || !IsValidMinusWord(word)) {
+                throw invalid_argument("The query includes special simbols or minuses"s);
+            }
             const QueryWord query_word = ParseQueryWord(word);
             if (!query_word.is_stop) {
                 if (query_word.is_minus) {
@@ -320,7 +299,7 @@ private:
                 }
             }
         }
-
+        
         for (const string& word : query.minus_words) {
             if (word_to_document_freqs_.count(word) == 0) {
                 continue;
@@ -350,13 +329,15 @@ void PrintDocument(const Document& document) {
 
 int main() {
     try {
-        //SearchServer search_server("и в на"s);
-        SearchServer search_server("и \x12в на"s);
+        SearchServer search_server("и в на"s);
+        //SearchServer search_server("и \x12в на"s);
         search_server.AddDocument(1, "пушистый кот #пушистый хвост"s, DocumentStatus::ACTUAL, {7, 2, 7});
         //search_server.AddDocument(1, "пушистый пёс и модный ошейник"s, DocumentStatus::ACTUAL, {1, 2});
-        search_server.AddDocument(-1, "пушистый пёс и модный ошейник"s, DocumentStatus::ACTUAL, {1, 2});
+        //search_server.AddDocument(-1, "пушистый пёс и модный ошейник"s, DocumentStatus::ACTUAL, {1, 2});
         //search_server.AddDocument(3, "большой пёс скво\x12рец"s, DocumentStatus::ACTUAL, {1, 3, 2});
         //search_server.FindTopDocuments("--пушистый"s);
+        //search_server.GetDocumentId(-1);
+        search_server.MatchDocument("пу\x12шистый"s, 1);
     }
     catch (const invalid_argument& e) {
         cout << e.what() << endl;
@@ -365,5 +346,6 @@ int main() {
         cout << e.what() << endl;
     }
 }
+
 
 
