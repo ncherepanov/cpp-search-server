@@ -247,6 +247,9 @@ private:
     };
 
     QueryWord ParseQueryWord(string text) const {
+        if (!IsValidWord(text) || !IsValidMinusWord(text)) {
+            throw invalid_argument("The query includes special simbols or minuses"s);
+        }
         bool is_minus = false;
         // Word shouldn't be empty
         if (text[0] == '-') {
@@ -264,9 +267,6 @@ private:
     Query ParseQuery(const string& text) const {
         Query query;
         for (const string& word : SplitIntoWords(text)) {
-            if (!IsValidWord(word) || !IsValidMinusWord(word)) {
-                throw invalid_argument("The query includes special simbols or minuses"s);
-            }
             const QueryWord query_word = ParseQueryWord(word);
             if (!query_word.is_stop) {
                 if (query_word.is_minus) {
@@ -299,7 +299,7 @@ private:
                 }
             }
         }
-        
+
         for (const string& word : query.minus_words) {
             if (word_to_document_freqs_.count(word) == 0) {
                 continue;
@@ -346,6 +346,4 @@ int main() {
         cout << e.what() << endl;
     }
 }
-
-
 
