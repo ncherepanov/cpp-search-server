@@ -1,8 +1,5 @@
  
-#include "document.h"
-#include "string_processing.h"
 #include "search_server.h"
-#include "paginator.h"
 #include "request_queue.h"
 
 using namespace std;
