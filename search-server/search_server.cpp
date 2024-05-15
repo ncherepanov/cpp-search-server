@@ -1,4 +1,3 @@
-    //Вставьте сюда своё решение из урока «Очередь запросов» темы «Стек, очередь, дек»
 
     #include "search_server.h"
 
@@ -101,9 +100,6 @@ int SearchServer::ComputeAverageRating(const std::vector<int>& ratings) {
 
 SearchServer::QueryWord SearchServer::ParseQueryWord(std::string text) const {
     QueryWord result;
-    if (text.empty()) {
-        throw std::invalid_argument("отсутствие текста после символа «минус» в поисковом запросе"s);
-    }
     bool is_minus = false;
     if (text[0] == '-') {
         is_minus = true;
